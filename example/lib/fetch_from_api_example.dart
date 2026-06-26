@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:example/example_product_model.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -13,10 +12,13 @@ class FromApiExample extends StatefulWidget {
 }
 
 class _FromApiExampleState extends State<FromApiExample> {
+  // Holds all items that have been loaded by ScrollFlow.
+  List<Product> products = [];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Products')),
+      appBar: AppBar(title: Text('Products ${products.length}')),
       body: ScrollFlow<Product>(
         fetcher: (page) async {
           final res = await http.get(
@@ -45,8 +47,17 @@ class _FromApiExampleState extends State<FromApiExample> {
             ),
             title: Text(product.title),
             subtitle: Text('\$${product.price}'),
+            onTap: () {
+              debugPrint('Tapped on ${product.title}');
+            },
           ),
         ),
+        // Receive all loaded items whenever the list changes.
+        onItemsChanged: (value) {
+          setState(() {
+            products = value;
+          });
+        },
       ),
     );
   }

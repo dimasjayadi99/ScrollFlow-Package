@@ -3,6 +3,8 @@
 
 A lightweight and customizable infinite scrolling widget for Flutter. ScrollFlow helps you implement infinite scrolling with minimal boilerplate. Simply provide a fetcher to load paginated data and an itemBuilder to display each item. The package automatically handles loading, pagination, empty state, error state, and load-more behavior.
 
+![alt text](<example_image.png>)
+
 ## Features
 
 - 🚀 Automatic infinite scrolling

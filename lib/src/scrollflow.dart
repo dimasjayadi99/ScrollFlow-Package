@@ -10,32 +10,40 @@ class ScrollFlowResult<T> {
 typedef ScrollFlowFetcher<T> = Future<ScrollFlowResult<T>> Function(int page);
 
 class ScrollFlow<T> extends StatefulWidget {
-  /// Dipanggil setiap kali butuh data baru. [page] mulai dari 0.
+  /// The first page starts at 0.
   final ScrollFlowFetcher<T> fetcher;
 
-  /// Builder per item — tidak perlu index, langsung dapat objek [T].
+  /// Builds a widget for each item.
   final Widget Function(BuildContext context, T item) itemBuilder;
 
-  /// Widget saat initial load (opsional).
+  /// Widget displayed while loading the first page.
   final Widget? loadingWidget;
 
-  /// Widget saat error (opsional). Tap untuk retry.
+  /// Builds a widget displayed when the initial load fails.
+  /// The provided callback can be used to retry the request.
   final Widget Function(Object error, VoidCallback retry)? errorBuilder;
 
-  /// Widget saat list kosong (opsional).
+  /// Widget displayed when no data is available.
   final Widget? emptyWidget;
 
-  /// Widget loader di bawah list saat load-more.
+  /// Widget displayed while loading additional pages.
   final Widget? loadMoreWidget;
 
-  /// Jarak dari bawah list untuk trigger load-more (default 200px).
+  /// Distance from the bottom of the list before triggering
+  /// the next page request.
+  /// Defaults to 200 pixels.
   final double loadMoreOffset;
 
-  /// Padding untuk ListView.
+  /// Padding applied to the ListView.
   final EdgeInsetsGeometry? padding;
 
-  /// Separator antar item (opsional).
+  /// Builds a separator widget between list items.
   final Widget Function(BuildContext, int)? separatorBuilder;
+
+  /// Called whenever the internal items list changes.
+  /// Returns all loaded items.
+  /// Useful when you need to access the entire list outside of ScrollFlow,
+  final ValueChanged<List<T>>? onItemsChanged;
 
   const ScrollFlow({
     super.key,
@@ -48,6 +56,7 @@ class ScrollFlow<T> extends StatefulWidget {
     this.loadMoreOffset = 200,
     this.padding,
     this.separatorBuilder,
+    this.onItemsChanged,
   });
 
   @override
@@ -100,6 +109,8 @@ class _ScrollFlowState<T> extends State<ScrollFlow<T>> {
         _loadMoreError = null;
         _initialError = null;
       });
+      // Notify listeners with all loaded items.
+      widget.onItemsChanged?.call(List.unmodifiable(_items));
     } catch (e) {
       if (!mounted) return;
       setState(() {

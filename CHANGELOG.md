@@ -1,3 +1,8 @@
+## 0.1.2
+
+- Added `onItemsChanged` callback to access all loaded items.
+- Improve package documentation.
+
 ## 0.1.1
 
 - Fix CHANGELOG.
