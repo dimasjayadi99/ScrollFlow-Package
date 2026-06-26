@@ -1,0 +1,21 @@
+name: scrollflow
+description: A lightweight and customizable infinite scrolling widget for Flutter.
+version: 0.1.0
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+
+platforms:
+  android:
+  ios:
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
