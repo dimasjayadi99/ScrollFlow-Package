@@ -1,3 +1,9 @@
+## 0.2.0
+
+- Added `ScrollFlowController` for programmatic control.
+- Added built-in pull-to-refresh support.
+- Improved API documentation and examples.
+
 ## 0.1.2
 
 - Added `onItemsChanged` callback to access all loaded items.
