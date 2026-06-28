@@ -12,6 +12,9 @@ class FromApiExample extends StatefulWidget {
 }
 
 class _FromApiExampleState extends State<FromApiExample> {
+  /// Controller for interacting with the ScrollFlow widget.
+  final controller = ScrollFlowController<Product>();
+
   // Holds all items that have been loaded by ScrollFlow.
   List<Product> products = [];
 
@@ -20,6 +23,8 @@ class _FromApiExampleState extends State<FromApiExample> {
     return Scaffold(
       appBar: AppBar(title: Text('Products ${products.length}')),
       body: ScrollFlow<Product>(
+        controller: controller,
+        enablePullToRefresh: true,
         fetcher: (page) async {
           final res = await http.get(
             Uri.parse(

@@ -3,7 +3,7 @@
 
 A lightweight and customizable infinite scrolling widget for Flutter. ScrollFlow helps you implement infinite scrolling with minimal boilerplate. Simply provide a fetcher to load paginated data and an itemBuilder to display each item. The package automatically handles loading, pagination, empty state, error state, and load-more behavior.
 
-![alt text](<example_image.png>)
+![Example](example.gif)
 
 ## Features
 
@@ -11,6 +11,8 @@ A lightweight and customizable infinite scrolling widget for Flutter. ScrollFlow
 - 📄 Simple page-based pagination
 - 🎨 Custom loading, error, and empty widgets
 - 🔄 Built-in retry support
+- 🔃 Optional pull-to-refresh
+- 🎮 Programmatic refresh with ScrollFlowController
 - 📱 Works with any data type using generics
 - ⚡ Lightweight and easy to use
 
@@ -46,7 +48,15 @@ ScrollFlow<int>(
 ## Fetching Data From API
 
 ```javascript
+/// Controller for interacting with the ScrollFlow widget.
+final controller = ScrollFlowController<Product>();
+
+// Holds all items that have been loaded by ScrollFlow.
+List<Product> products = [];
+
 ScrollFlow<Product>(
+  controller: controller,
+  enablePullToRefresh: true,
   fetcher: (page) async {
     final res = await http.get(
       Uri.parse(
@@ -74,11 +84,40 @@ ScrollFlow<Product>(
       ),
       title: Text(product.title),
       subtitle: Text('\$${product.price}'),
+      onTap: () {
+        debugPrint('Tapped on ${product.title}');
+      },
     ),
   ),
-)
+  // Receive all loaded items whenever the list changes.
+  onItemsChanged: (value) {
+    setState(() {
+      products = value;
+    });
+  },
+),
 ```
 
+## Refresh Programmatically
+
+You can refresh the list at any time using a `ScrollFlowController`.
+
+```dart
+final controller = ScrollFlowController<Product>();
+
+ElevatedButton(
+  onPressed: () async {
+    await controller.refresh();
+  },
+  child: const Text('Refresh'),
+);
+
+ScrollFlow<Product>(
+  controller: controller,
+  fetcher: ...,
+  itemBuilder: ...,
+);
+```
 
 ## Custom Loading Widget
 
@@ -133,6 +172,7 @@ ScrollFlow<Product>(
 
 | Parameter | Description                |
 | :-------- | :------------------------- |
+| `controller` | Controls the ScrollFlow instance programmatically (e.g. refresh). |
 | `fetcher` | Loads a page of data. |
 | `itemBuilder` | Builds each list item. |
 | `loadingWidget` | Widget displayed during the initial loading state. |
@@ -142,6 +182,10 @@ ScrollFlow<Product>(
 | `loadMoreOffset` | Distance from the bottom before loading more data. |
 | `padding` | Padding applied to the ListView. |
 | `separatorBuilder` | Builds separators between items. |
+| `onItemsChanged` | Callback invoked when the displayed items are updated. |
+| `physics` | Custom scroll physics for the internal ListView. |
+| `shrinkWrap` | Whether the scroll view should size itself to its contents. |
+| `enablePullToRefresh` | Enables pull-to-refresh using a built-in RefreshIndicator. |
 ## Example
 
 A complete runnable example is available in the `example/` directory.

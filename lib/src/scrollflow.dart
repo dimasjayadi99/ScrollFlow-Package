@@ -10,6 +10,9 @@ class ScrollFlowResult<T> {
 typedef ScrollFlowFetcher<T> = Future<ScrollFlowResult<T>> Function(int page);
 
 class ScrollFlow<T> extends StatefulWidget {
+  /// Controller for interacting with the ScrollFlow widget.
+  final ScrollFlowController<T>? controller;
+
   /// The first page starts at 0.
   final ScrollFlowFetcher<T> fetcher;
 
@@ -45,8 +48,18 @@ class ScrollFlow<T> extends StatefulWidget {
   /// Useful when you need to access the entire list outside of ScrollFlow,
   final ValueChanged<List<T>>? onItemsChanged;
 
+  /// Whether the list should shrink-wrap its contents.
+  final bool shrinkWrap;
+
+  /// Scroll physics applied to the internal ListView.
+  final ScrollPhysics? physics;
+
+  /// Enables pull-to-refresh using a built-in RefreshIndicator.
+  final bool enablePullToRefresh;
+
   const ScrollFlow({
     super.key,
+    this.controller,
     required this.fetcher,
     required this.itemBuilder,
     this.loadingWidget,
@@ -57,6 +70,9 @@ class ScrollFlow<T> extends StatefulWidget {
     this.padding,
     this.separatorBuilder,
     this.onItemsChanged,
+    this.shrinkWrap = false,
+    this.physics,
+    this.enablePullToRefresh = false,
   });
 
   @override
@@ -82,12 +98,14 @@ class _ScrollFlowState<T> extends State<ScrollFlow<T>> {
   @override
   void initState() {
     super.initState();
+    widget.controller?._refresh = _refresh;
     _controller.addListener(_onScroll);
     _fetchNext();
   }
 
   @override
   void dispose() {
+    widget.controller?._refresh = null;
     _controller.dispose();
     super.dispose();
   }
@@ -153,6 +171,24 @@ class _ScrollFlowState<T> extends State<ScrollFlow<T>> {
     _fetchNext();
   }
 
+  Future<void> _refresh() async {
+    _page = 0;
+    _hasMore = true;
+    _isFetching = false;
+    _items.clear();
+
+    _initialError = null;
+    _loadMoreError = null;
+    _isLoadingMore = false;
+    _isInitialLoading = true;
+
+    widget.onItemsChanged?.call(const []);
+
+    if (mounted) setState(() {});
+
+    await _fetchNext();
+  }
+
   @override
   Widget build(BuildContext context) {
     // ── Initial loading
@@ -177,8 +213,12 @@ class _ScrollFlowState<T> extends State<ScrollFlow<T>> {
     final itemCount =
         _items.length + (_isLoadingMore || _loadMoreError != null ? 1 : 0);
 
-    return ListView.separated(
+    Widget list = ListView.separated(
       controller: _controller,
+      shrinkWrap: widget.shrinkWrap,
+      physics: widget.enablePullToRefresh
+          ? const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics())
+          : widget.physics,
       padding: widget.padding,
       itemCount: itemCount,
       separatorBuilder:
@@ -199,6 +239,20 @@ class _ScrollFlowState<T> extends State<ScrollFlow<T>> {
         return widget.itemBuilder(context, _items[index]);
       },
     );
+
+    if (widget.enablePullToRefresh) {
+      return RefreshIndicator(onRefresh: _refresh, child: list);
+    }
+
+    return list;
+  }
+}
+
+class ScrollFlowController<T> {
+  Future<void> Function()? _refresh;
+
+  Future<void> refresh() async {
+    await _refresh?.call();
   }
 }
 
