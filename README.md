@@ -3,7 +3,7 @@
 
 A lightweight and customizable infinite scrolling widget for Flutter. ScrollFlow helps you implement infinite scrolling with minimal boilerplate. Simply provide a fetcher to load paginated data and an itemBuilder to display each item. The package automatically handles loading, pagination, empty state, error state, and load-more behavior.
 
-![Example](example.gif)
+![Example](examples.gif)
 
 ## Features
 
@@ -15,7 +15,7 @@ A lightweight and customizable infinite scrolling widget for Flutter. ScrollFlow
 - 🎮 Programmatic refresh with ScrollFlowController
 - 📱 Works with any data type using generics
 - ⚡ Lightweight and easy to use
-
+- 🔲 Supports both ListView and GridView layouts
 
 ## Installation
 
@@ -75,24 +75,39 @@ ScrollFlow<Product>(
     );
   },
   itemBuilder: (context, product) => Card(
-    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: ListTile(
-      leading: Image.network(
-        product.thumbnail,
-        width: 60,
-        fit: BoxFit.cover,
-      ),
-      title: Text(product.title),
-      subtitle: Text('\$${product.price}'),
-      onTap: () {
-        debugPrint('Tapped on ${product.title}');
-      },
-    ),
+    child: yourWidget(),
   ),
   // Receive all loaded items whenever the list changes.
   onItemsChanged: (value) {
     setState(() {
       products = value;
+    });
+  },
+),
+```
+
+## Grid Usage
+
+Simply use GridScrollFlow with a SliverGridDelegate.
+
+```
+GridScrollFlow<Product>(
+  ...
+  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 2,
+    crossAxisSpacing: 16,
+    mainAxisSpacing: 16,
+    childAspectRatio: 0.7,
+  ),
+  fetcher: (page) async {
+    ...
+  },
+  itemBuilder: (context, product) {
+    return yourWidget()
+  },
+  onItemsChanged: (items) {
+    setState(() {
+      products = items;
     });
   },
 ),
@@ -186,11 +201,10 @@ ScrollFlow<Product>(
 | `physics` | Custom scroll physics for the internal ListView. |
 | `shrinkWrap` | Whether the scroll view should size itself to its contents. |
 | `enablePullToRefresh` | Enables pull-to-refresh using a built-in RefreshIndicator. |
+| `gridDelegate` | Configures the layout of GridScrollFlow. (Only available in GridScrollFlow) |
 
 ## Articles
 - [Introducing ScrollFlow: Build Infinite Scroll in Flutter in Minutes.](https://medium.com/@dimasjayadi7/introducing-scrollflow-build-infinite-scroll-in-flutter-in-minutes-89af1e81367b?sharedUserId=dimasjayadi7)
-- [How ScrollFlow Works](https://...)
-- [Integrating ScrollFlow with REST API](https://...)
 
 ## Example
 

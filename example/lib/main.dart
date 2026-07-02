@@ -1,5 +1,6 @@
 import 'package:example/basic_example.dart';
 import 'package:example/fetch_from_api_example.dart';
+import 'package:example/grid_from_api_example.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -38,6 +39,17 @@ class MyApp extends StatelessWidget {
                       );
                     },
                     child: const Text('From API Example'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const GridFromApiExample(),
+                        ),
+                      );
+                    },
+                    child: const Text('From API Example (Grid View)'),
                   ),
                 ],
               ),
