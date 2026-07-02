@@ -1,3 +1,9 @@
+## 0.3.0
+
+- Added `GridScrollFlow` for infinite scrolling grid layouts.
+- Improved package documentation and examples.
+- Improved code organization and reusability.
+
 ## 0.2.0
 
 - Added `ScrollFlowController` for programmatic control.
