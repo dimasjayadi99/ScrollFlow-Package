@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-
-class ScrollFlowResult<T> {
-  final List<T> items;
-  final bool hasMore;
-
-  const ScrollFlowResult({required this.items, required this.hasMore});
-}
-
-typedef ScrollFlowFetcher<T> = Future<ScrollFlowResult<T>> Function(int page);
+import 'package:scrollflow/src/builders/scrollflow_state_builder.dart';
+import 'package:scrollflow/src/controllers/scrollflow_mixin.dart';
+import 'package:scrollflow/src/controllers/scrollflow_controller.dart';
+import 'package:scrollflow/src/types/scrollflow_fetcher.dart';
+import 'package:scrollflow/src/widgets/default_error_widget.dart';
+import 'package:scrollflow/src/widgets/default_load_more_error_widget.dart';
 
 class ScrollFlow<T> extends StatefulWidget {
   /// Controller for interacting with the ScrollFlow widget.
@@ -79,224 +76,85 @@ class ScrollFlow<T> extends StatefulWidget {
   State<ScrollFlow<T>> createState() => _ScrollFlowState<T>();
 }
 
-class _ScrollFlowState<T> extends State<ScrollFlow<T>> {
-  final ScrollController _controller = ScrollController();
-  final List<T> _items = [];
+class _ScrollFlowState<T> extends State<ScrollFlow<T>>
+    with ScrollFlowMixin<T, ScrollFlow<T>> {
+  @override
+  ScrollFlowFetcher<T> get fetcher => widget.fetcher;
 
-  int _page = 0;
-  bool _hasMore = true;
-  bool _isFetching = false;
+  @override
+  double get loadMoreOffset => widget.loadMoreOffset;
 
-  // Status initial load
-  bool _isInitialLoading = true;
-  Object? _initialError;
-
-  // Status load-more
-  bool _isLoadingMore = false;
-  Object? _loadMoreError;
+  @override
+  ValueChanged<List<T>>? get onItemsChanged => widget.onItemsChanged;
 
   @override
   void initState() {
     super.initState();
-    widget.controller?._refresh = _refresh;
-    _controller.addListener(_onScroll);
-    _fetchNext();
+    widget.controller?.refresh = refresh;
+    controller.addListener(onScroll);
+    fetchNext();
   }
 
   @override
   void dispose() {
-    widget.controller?._refresh = null;
-    _controller.dispose();
+    widget.controller?.refresh = null;
+    controller.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchNext() async {
-    if (_isFetching || !_hasMore) return;
-    _isFetching = true;
-
-    try {
-      final result = await widget.fetcher(_page);
-      if (!mounted) return;
-
-      setState(() {
-        _items.addAll(result.items);
-        _hasMore = result.hasMore;
-        _page++;
-        _isInitialLoading = false;
-        _isLoadingMore = false;
-        _loadMoreError = null;
-        _initialError = null;
-      });
-      // Notify listeners with all loaded items.
-      widget.onItemsChanged?.call(List.unmodifiable(_items));
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        if (_page == 0) {
-          _initialError = e;
-          _isInitialLoading = false;
-        } else {
-          _loadMoreError = e;
-          _isLoadingMore = false;
-        }
-      });
-    } finally {
-      _isFetching = false;
-    }
-  }
-
-  void _onScroll() {
-    if (!_hasMore || _isFetching || _loadMoreError != null) return;
-
-    final pos = _controller.position;
-    if (pos.extentAfter <= widget.loadMoreOffset) {
-      setState(() => _isLoadingMore = true);
-      _fetchNext();
-    }
-  }
-
-  void _retryInitial() {
-    setState(() {
-      _isInitialLoading = true;
-      _initialError = null;
-    });
-    _fetchNext();
-  }
-
-  void _retryLoadMore() {
-    setState(() {
-      _loadMoreError = null;
-      _isLoadingMore = true;
-    });
-    _fetchNext();
-  }
-
-  Future<void> _refresh() async {
-    _page = 0;
-    _hasMore = true;
-    _isFetching = false;
-    _items.clear();
-
-    _initialError = null;
-    _loadMoreError = null;
-    _isLoadingMore = false;
-    _isInitialLoading = true;
-
-    widget.onItemsChanged?.call(const []);
-
-    if (mounted) setState(() {});
-
-    await _fetchNext();
-  }
-
   @override
   Widget build(BuildContext context) {
-    // ── Initial loading
-    if (_isInitialLoading) {
-      return widget.loadingWidget ??
-          const Center(child: CircularProgressIndicator());
-    }
-
-    // ── Initial error
-    if (_initialError != null) {
-      return widget.errorBuilder?.call(_initialError!, _retryInitial) ??
-          _DefaultErrorWidget(error: _initialError!, onRetry: _retryInitial);
-    }
-
-    // ── Empty
-    if (_items.isEmpty) {
-      return widget.emptyWidget ??
-          const Center(child: Text('No data available'));
-    }
-
-    // ── List
-    final itemCount =
-        _items.length + (_isLoadingMore || _loadMoreError != null ? 1 : 0);
-
-    Widget list = ListView.separated(
-      controller: _controller,
-      shrinkWrap: widget.shrinkWrap,
-      physics: widget.enablePullToRefresh
-          ? const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics())
-          : widget.physics,
-      padding: widget.padding,
-      itemCount: itemCount,
-      separatorBuilder:
-          widget.separatorBuilder ?? (_, _) => const SizedBox.shrink(),
-      itemBuilder: (context, index) {
-        // Footer: loader atau error load-more
-        if (index == _items.length) {
-          if (_loadMoreError != null) {
-            return _DefaultLoadMoreErrorWidget(onRetry: _retryLoadMore);
-          }
-          return widget.loadMoreWidget ??
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
-              );
-        }
-
-        return widget.itemBuilder(context, _items[index]);
+    return buildState(
+      isLoading: isInitialLoading,
+      error: initialError,
+      isEmpty: items.isEmpty,
+      loading: () {
+        return widget.loadingWidget ??
+            const Center(child: CircularProgressIndicator());
       },
-    );
+      errorBuilder: (error) {
+        return widget.errorBuilder?.call(error, retryInitial) ??
+            DefaultErrorWidget(error: error, onRetry: retryInitial);
+      },
+      empty: () {
+        return widget.emptyWidget ??
+            const Center(child: Text('No data available'));
+      },
+      child: () {
+        Widget list = ListView.separated(
+          controller: controller,
+          shrinkWrap: widget.shrinkWrap,
+          physics: widget.enablePullToRefresh
+              ? const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                )
+              : widget.physics,
+          padding: widget.padding,
+          itemCount:
+              items.length + (isLoadingMore || loadMoreError != null ? 1 : 0),
+          separatorBuilder:
+              widget.separatorBuilder ?? (_, _) => const SizedBox.shrink(),
+          itemBuilder: (context, index) {
+            if (index == items.length) {
+              if (loadMoreError != null) {
+                return DefaultLoadMoreErrorWidget(onRetry: retryLoadMore);
+              }
 
-    if (widget.enablePullToRefresh) {
-      return RefreshIndicator(onRefresh: _refresh, child: list);
-    }
+              return widget.loadMoreWidget ??
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+            }
 
-    return list;
-  }
-}
-
-class ScrollFlowController<T> {
-  Future<void> Function()? _refresh;
-
-  Future<void> refresh() async {
-    await _refresh?.call();
-  }
-}
-
-// ───────────── Default widgets ─────────────
-class _DefaultErrorWidget extends StatelessWidget {
-  final Object error;
-  final VoidCallback onRetry;
-
-  const _DefaultErrorWidget({required this.error, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 12),
-          Text(error.toString()),
-          const SizedBox(height: 12),
-          ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-        ],
-      ),
-    );
-  }
-}
-
-class _DefaultLoadMoreErrorWidget extends StatelessWidget {
-  final VoidCallback onRetry;
-
-  const _DefaultLoadMoreErrorWidget({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('Failed to load more'),
-          const SizedBox(width: 12),
-          TextButton(onPressed: onRetry, child: const Text('Retry')),
-        ],
-      ),
+            return widget.itemBuilder(context, items[index]);
+          },
+        );
+        if (widget.enablePullToRefresh) {
+          list = RefreshIndicator(onRefresh: refresh, child: list);
+        }
+        return list;
+      },
     );
   }
 }

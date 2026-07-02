@@ -186,6 +186,12 @@ ScrollFlow<Product>(
 | `physics` | Custom scroll physics for the internal ListView. |
 | `shrinkWrap` | Whether the scroll view should size itself to its contents. |
 | `enablePullToRefresh` | Enables pull-to-refresh using a built-in RefreshIndicator. |
+
+## Articles
+- [Introducing ScrollFlow: Build Infinite Scroll in Flutter in Minutes.](https://medium.com/@dimasjayadi7/introducing-scrollflow-build-infinite-scroll-in-flutter-in-minutes-89af1e81367b?sharedUserId=dimasjayadi7)
+- [How ScrollFlow Works](https://...)
+- [Integrating ScrollFlow with REST API](https://...)
+
 ## Example
 
 A complete runnable example is available in the `example/` directory.
